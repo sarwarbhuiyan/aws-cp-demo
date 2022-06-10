@@ -1,0 +1,46 @@
+---
+- hosts: all
+  become: True
+  tasks:
+    - name: Add repository
+      yum_repository:
+        name: docker-ce
+        description: Docker CE Repo
+        baseurl: https://download.docker.com/linux/centos/7/$basearch/stable
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        gpgcheck: yes
+
+    - name: Enable EPEL Repository on CentOS 7
+      yum:
+        name: epel-release
+        state: latest
+
+    - name: install packages
+      yum:
+        name: ["git", "jq", "java", "docker-ce",  "docker-ce-cli",  "containerd.io"]
+        state: present
+        update_cache: True
+
+    - name: Docker service
+      become: True
+      service:
+        name: docker
+        state: started
+
+    - name: Checkout cp-demo
+      ansible.builtin.git:
+        repo: "https://github.com/confluentinc/cp-demo.git"
+        dest: "/home/centos/cp-demo"
+        version: "7.1.0-post"
+
+    - name: Install docker-compose
+      get_url:
+        url : https://github.com/docker/compose/releases/download/v2.4.1/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 'u+x,g+x,o+x'
+
+    - name: add centos user to docker group
+      ansible.builtin.user:
+        name: centos
+        comment: centos
+        group: docker
